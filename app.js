@@ -29,6 +29,11 @@ let mediaRecorder = null;
 let chunks = [];
 let startedAt = 0;
 let timerId = null;
+let whisperPipeline = null;
+let demoIsPlaying = false;
+
+const WHISPER_MODEL = 'onnx-community/whisper-tiny.en';
+const TRANSFORMERS_JS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
 
 function emptyTicket() {
   return Object.fromEntries(fields.map(([key]) => [key, { value: 'Not discussed', evidence: 'Not discussed' }]));
@@ -129,6 +134,157 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 1800);
 }
 
+function setTranscriptionStatus(message, progress = null, state = 'working') {
+  const box = document.getElementById('transcriptionStatus');
+  const label = document.getElementById('transcriptionLabel');
+  const bar = document.getElementById('transcriptionProgress');
+  box.hidden = false;
+  box.dataset.state = state;
+  label.textContent = message;
+  if (progress === null) bar.removeAttribute('value');
+  else bar.value = Math.max(0, Math.min(100, progress));
+}
+
+function hideTranscriptionStatus() {
+  document.getElementById('transcriptionStatus').hidden = true;
+}
+
+async function getWhisperPipeline() {
+  if (whisperPipeline) return whisperPipeline;
+
+  setTranscriptionStatus('Loading the open-source Whisper model…', 0);
+  const { pipeline, env } = await import(TRANSFORMERS_JS_URL);
+  env.useBrowserCache = true;
+
+  const useWebGpu = Boolean(navigator.gpu);
+  whisperPipeline = await pipeline('automatic-speech-recognition', WHISPER_MODEL, {
+    device: useWebGpu ? 'webgpu' : 'wasm',
+    ...(useWebGpu ? {} : { dtype: 'q8' }),
+    progress_callback: info => {
+      if (typeof info.progress === 'number') {
+        setTranscriptionStatus(`Loading Whisper: ${Math.round(info.progress)}%`, info.progress);
+      }
+    }
+  });
+  return whisperPipeline;
+}
+
+async function decodeAudioTo16kMono(blob) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) throw new Error('Audio decoding is not supported in this browser.');
+
+  const context = new AudioContextClass();
+  try {
+    const decoded = await context.decodeAudioData(await blob.arrayBuffer());
+    const length = Math.max(1, Math.ceil(decoded.duration * 16000));
+    const offline = new OfflineAudioContext(1, length, 16000);
+    const source = offline.createBufferSource();
+    source.buffer = decoded;
+    source.connect(offline.destination);
+    source.start();
+    const rendered = await offline.startRendering();
+    return rendered.getChannelData(0).slice();
+  } finally {
+    await context.close().catch(() => {});
+  }
+}
+
+async function transcribeAudio(blob) {
+  const generateBtn = document.getElementById('generateBtn');
+  generateBtn.disabled = true;
+  setTranscriptionStatus('Preparing audio…', null);
+
+  try {
+    const [transcriber, audio] = await Promise.all([getWhisperPipeline(), decodeAudioTo16kMono(blob)]);
+    setTranscriptionStatus('Transcribing locally in your browser…', null);
+    const result = await transcriber(audio, {
+      chunk_length_s: 30,
+      stride_length_s: 5,
+      language: 'english',
+      task: 'transcribe'
+    });
+    const text = String(result?.text || '').trim();
+    if (!text) throw new Error('No speech was detected in this recording.');
+    document.getElementById('transcript').value = text;
+    setTranscriptionStatus('Transcription ready. Review it, then generate the ticket.', 100, 'ready');
+    showToast('Recording transcribed');
+  } catch (error) {
+    console.error('[transcription] failed', error);
+    setTranscriptionStatus(`Could not transcribe: ${error?.message || 'unknown browser error'}`, 0, 'error');
+    showToast('Transcription failed — you can still paste a transcript');
+  } finally {
+    generateBtn.disabled = false;
+  }
+}
+
+async function getAustralianVoices() {
+  let voices = speechSynthesis.getVoices();
+  if (!voices.length) {
+    await Promise.race([
+      new Promise(resolve => speechSynthesis.addEventListener('voiceschanged', resolve, { once: true })),
+      new Promise(resolve => setTimeout(resolve, 700))
+    ]);
+    voices = speechSynthesis.getVoices();
+  }
+  const australian = voices.filter(voice => /^en-AU$/i.test(voice.lang));
+  const english = voices.filter(voice => /^en-/i.test(voice.lang));
+  const pool = australian.length >= 2 ? australian : [...australian, ...english];
+  return [pool[0] || null, pool.find(voice => voice !== pool[0]) || pool[0] || null];
+}
+
+function speakLine(text, voice, pitch) {
+  return new Promise(resolve => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-AU';
+    utterance.voice = voice;
+    utterance.rate = 0.9;
+    utterance.pitch = pitch;
+    utterance.onend = resolve;
+    utterance.onerror = resolve;
+    speechSynthesis.speak(utterance);
+  });
+}
+
+async function playDemoCall() {
+  const button = document.getElementById('demoAudioBtn');
+  if (!('speechSynthesis' in window)) {
+    document.getElementById('transcript').value = demoTranscript;
+    showToast('Demo transcript loaded; speech playback is unavailable');
+    return;
+  }
+
+  if (demoIsPlaying) {
+    speechSynthesis.cancel();
+    demoIsPlaying = false;
+    button.textContent = 'Load demo recording';
+    hideTranscriptionStatus();
+    return;
+  }
+
+  speechSynthesis.cancel();
+  document.getElementById('transcript').value = demoTranscript;
+  currentTicket = structureTranscript(demoTranscript);
+  renderTicket();
+  document.getElementById('generateBtn').disabled = false;
+
+  demoIsPlaying = true;
+  button.textContent = 'Stop demo recording';
+  setTranscriptionStatus('Playing the built-in two-speaker Australian demo call…', null, 'ready');
+  const [billVoice, tomVoice] = await getAustralianVoices();
+  const lines = demoTranscript.split('\n').filter(Boolean);
+
+  for (const line of lines) {
+    if (!demoIsPlaying) break;
+    const [speaker, ...words] = line.split(':');
+    await speakLine(words.join(':').trim(), speaker === 'Bill' ? billVoice : tomVoice, speaker === 'Bill' ? 0.92 : 1.04);
+    await new Promise(resolve => setTimeout(resolve, 220));
+  }
+
+  demoIsPlaying = false;
+  button.textContent = 'Replay demo recording';
+  setTranscriptionStatus('Demo complete. The transcript and ticket are ready.', 100, 'ready');
+}
+
 async function toggleRecording() {
   const btn = document.getElementById('recordBtn');
   const label = document.getElementById('recordLabel');
@@ -148,12 +304,13 @@ async function toggleRecording() {
     chunks = [];
     mediaRecorder = new MediaRecorder(stream);
     mediaRecorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-    mediaRecorder.onstop = () => {
+    mediaRecorder.onstop = async () => {
       const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
       const player = document.getElementById('audioPlayer');
       player.src = URL.createObjectURL(blob);
       player.hidden = false;
       stream.getTracks().forEach(t => t.stop());
+      await transcribeAudio(blob);
     };
     mediaRecorder.start();
     startedAt = Date.now();
@@ -170,17 +327,18 @@ async function toggleRecording() {
 
 document.getElementById('recordBtn').addEventListener('click', toggleRecording);
 document.getElementById('demoBtn').addEventListener('click', () => { document.getElementById('transcript').value = demoTranscript; showToast('Demo transcript loaded'); });
-document.getElementById('demoAudioBtn').addEventListener('click', () => { showToast('Demo transcript is available in step 02'); });
+document.getElementById('demoAudioBtn').addEventListener('click', playDemoCall);
 document.getElementById('textUpload').addEventListener('change', async e => {
   const file = e.target.files?.[0]; if (!file) return;
   document.getElementById('transcript').value = await file.text();
   showToast('Transcript loaded');
 });
-document.getElementById('audioUpload').addEventListener('change', e => {
+document.getElementById('audioUpload').addEventListener('change', async e => {
   const file = e.target.files?.[0]; if (!file) return;
   const player = document.getElementById('audioPlayer');
   player.src = URL.createObjectURL(file); player.hidden = false;
   showToast('Recording loaded');
+  await transcribeAudio(file);
 });
 document.getElementById('generateBtn').addEventListener('click', () => {
   const text = document.getElementById('transcript').value.trim();
