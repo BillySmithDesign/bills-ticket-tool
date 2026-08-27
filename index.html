@@ -13,7 +13,12 @@
 <body>
   <header class="topbar">
     <div class="brand-wrap">
-      <div class="brand-mark" aria-label="Normet inspired accent mark"><span>N</span><span class="brand-o">O</span><span>RMET</span></div>
+      <img
+        class="brand-logo"
+        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFUEwGYSQ89ep-7l1aganmShpQT9PsuVa3WiQZyC9cSVYDns_sQwercHJd&amp;s=10"
+        alt="Normet"
+        referrerpolicy="no-referrer"
+      >
       <div class="brand-divider"></div>
       <div>
         <div class="eyebrow">SERVICE SUPPORT</div>
@@ -86,7 +91,10 @@
           <div class="step-no dark">03</div>
           <div><div class="eyebrow light">STRUCTURED OUTPUT</div><h3>Support ticket draft</h3></div>
         </div>
-        <button class="btn btn-outline-light" id="copyBtn">Copy JSON</button>
+        <div class="output-actions">
+          <button class="btn btn-outline-light" id="copyBtn">Copy JSON</button>
+          <button class="btn btn-outline-light" id="downloadBtn">Download ticket</button>
+        </div>
       </div>
       <div class="ticket-grid" id="ticketGrid"></div>
       <div class="output-footer"><span>Nothing is inferred without transcript evidence.</span><span>JSON schema v0.1</span></div>
