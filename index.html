@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111111" />
+  <title>Bill’s Ticket Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-wrap">
+      <div class="brand-mark" aria-label="Normet inspired accent mark"><span>N</span><span class="brand-o">O</span><span>RMET</span></div>
+      <div class="brand-divider"></div>
+      <div>
+        <div class="eyebrow">SERVICE SUPPORT</div>
+        <h1>Bill’s Ticket Tool</h1>
+      </div>
+    </div>
+    <div class="status-pill"><span class="status-dot"></span> Secure processing ready</div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero">
+      <div>
+        <div class="kicker">Evidence-backed call intelligence</div>
+        <h2>Turn support calls into<br><span>structured service tickets.</span></h2>
+        <p>Capture a call, add the transcript and generate a clean ticket that only uses information actually discussed.</p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">
+        <span>01</span><i></i><span>02</span><i></i><span>03</span>
+      </div>
+    </section>
+
+    <div class="workflow-grid">
+      <section class="panel capture-panel">
+        <div class="step-header">
+          <div class="step-no">01</div>
+          <div><div class="eyebrow">CAPTURE</div><h3>Record or upload a call</h3></div>
+        </div>
+
+        <div class="recorder-card">
+          <div class="timer" id="timer">00:00</div>
+          <button class="record-btn" id="recordBtn" aria-label="Start recording"><span></span></button>
+          <div class="record-label" id="recordLabel">Tap to record</div>
+          <p>Place the call on speaker, then tap record.</p>
+        </div>
+
+        <div class="button-row">
+          <label class="btn btn-secondary file-btn">Upload recording<input id="audioUpload" type="file" accept="audio/*" hidden></label>
+          <button class="btn btn-ghost" id="demoAudioBtn">Load demo recording</button>
+        </div>
+        <div class="consent-note">Confirm all participants consent before recording. Use a separate device from the phone making the call.</div>
+        <audio id="audioPlayer" controls hidden></audio>
+      </section>
+
+      <section class="panel transcript-panel">
+        <div class="step-header">
+          <div class="step-no">02</div>
+          <div><div class="eyebrow">TRANSCRIPT</div><h3>Paste or upload transcript</h3></div>
+        </div>
+
+        <textarea id="transcript" placeholder="Paste call transcript here…" spellcheck="true"></textarea>
+        <div class="button-row transcript-actions">
+          <button class="btn btn-ghost" id="demoBtn">Load demo</button>
+          <label class="btn btn-secondary file-btn">Upload text transcript (.txt)<input id="textUpload" type="file" accept=".txt,text/plain" hidden></label>
+        </div>
+        <button class="btn btn-primary btn-full" id="generateBtn">Generate structured ticket <span>→</span></button>
+      </section>
+    </div>
+
+    <section class="output-section">
+      <div class="output-top">
+        <div class="step-header">
+          <div class="step-no dark">03</div>
+          <div><div class="eyebrow light">STRUCTURED OUTPUT</div><h3>Support ticket draft</h3></div>
+        </div>
+        <button class="btn btn-outline-light" id="copyBtn">Copy JSON</button>
+      </div>
+      <div class="ticket-grid" id="ticketGrid"></div>
+      <div class="output-footer"><span>Nothing is inferred without transcript evidence.</span><span>JSON schema v0.1</span></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast">Copied to clipboard</div>
+  <script src="app.js"></script>
+</body>
+</html>
