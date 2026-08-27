@@ -31,6 +31,7 @@ let startedAt = 0;
 let timerId = null;
 let whisperPipeline = null;
 let demoIsPlaying = false;
+let ticketGeneratedAt = new Date().toISOString();
 
 const WHISPER_MODEL = 'onnx-community/whisper-tiny.en';
 const TRANSFORMERS_JS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
@@ -55,6 +56,11 @@ function renderTicket() {
       <div class="ticket-evidence">“${escapeHtml(item.evidence)}”</div>
     </article>`;
   }).join('');
+  renderRawJson();
+}
+
+function markTicketUpdated() {
+  ticketGeneratedAt = new Date().toISOString();
 }
 
 function clean(s) { return s?.replace(/^[:\s-]+|[\s.,;]+$/g, '').trim(); }
@@ -264,6 +270,7 @@ async function playDemoCall() {
   speechSynthesis.cancel();
   document.getElementById('transcript').value = demoTranscript;
   currentTicket = structureTranscript(demoTranscript);
+  markTicketUpdated();
   renderTicket();
   document.getElementById('generateBtn').disabled = false;
 
@@ -343,6 +350,7 @@ document.getElementById('audioUpload').addEventListener('change', async e => {
 document.getElementById('generateBtn').addEventListener('click', () => {
   const text = document.getElementById('transcript').value.trim();
   currentTicket = text ? structureTranscript(text) : emptyTicket();
+  markTicketUpdated();
   renderTicket();
   document.querySelector('.output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
@@ -352,9 +360,14 @@ function getTicketPayload() {
     schema_version: '1.0',
     source: 'bills-ticket-tool',
     target: 'd365_customer_service',
-    generated_at: new Date().toISOString(),
+    generated_at: ticketGeneratedAt,
     ...Object.fromEntries(fields.map(([key]) => [key, currentTicket[key]]))
   };
+}
+
+function renderRawJson() {
+  const output = document.getElementById('rawJsonOutput');
+  if (output) output.textContent = JSON.stringify(getTicketPayload(), null, 2);
 }
 
 document.getElementById('copyBtn').addEventListener('click', async () => {
@@ -368,15 +381,19 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   const suffix = serial && serial !== 'Not discussed'
     ? serial.replace(/[^a-z0-9-]+/gi, '-').toLowerCase()
     : new Date().toISOString().slice(0, 10);
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+  const filename = `bills-ticket-${suffix}.json`;
+  const json = JSON.stringify(payload, null, 2);
+  const file = new File([json], filename, { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(file);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `bills-ticket-${suffix}.json`;
+  link.download = filename;
+  link.type = 'application/json';
+  link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
   showToast('Ticket JSON downloaded');
 });
 
