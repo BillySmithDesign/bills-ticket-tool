@@ -88,6 +88,15 @@ h3 { font-size: 23px; margin: 5px 0 0; letter-spacing: -.035em; }
 .consent-note { margin-top: 14px; padding: 12px 14px; border-left: 3px solid var(--red); background: #faf4f4; color: #676767; font-size: 11px; line-height: 1.5; }
 #audioPlayer { width: 100%; margin-top: 14px; }
 
+.transcription-status { margin-top: 14px; padding: 13px 14px; border: 1px solid #d7d7d7; border-radius: 10px; background: #f7f7f7; color: #272727; }
+.transcription-status-row { display: flex; align-items: center; gap: 9px; font-size: .83rem; font-weight: 700; }
+.transcription-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 5px rgba(215, 25, 32, .12); }
+.transcription-status[data-state="ready"] .transcription-status-dot { background: #218739; box-shadow: 0 0 0 5px rgba(33, 135, 57, .12); }
+.transcription-status[data-state="error"] .transcription-status-dot { background: #b42318; }
+.transcription-status progress { width: 100%; height: 7px; margin: 10px 0 5px; accent-color: var(--red); }
+.transcription-status small { display: block; color: #686868; line-height: 1.35; }
+.btn:disabled { cursor: wait; opacity: .55; }
+
 #transcript { width: 100%; min-height: 290px; resize: vertical; margin-top: 28px; border: 1px solid #d7d7d4; border-radius: 12px; padding: 16px; background: #fafaf9; color: #202020; outline: none; line-height: 1.55; font-size: 13px; }
 #transcript:focus { border-color: #b9b9b6; box-shadow: 0 0 0 3px rgba(0,0,0,.03); background: #fff; }
 .transcript-actions { margin-top: 12px; }
