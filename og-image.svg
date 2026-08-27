@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0d0d0d"/>
+  <rect width="18" height="630" fill="#e30613"/>
+  <circle cx="1064" cy="-18" r="230" fill="#e30613"/>
+  <circle cx="1064" cy="-18" r="150" fill="#0d0d0d"/>
+  <path d="M932 630h268V362L932 630Z" fill="#181818"/>
+  <rect x="76" y="68" width="196" height="42" rx="21" fill="#2a1012" stroke="#e30613"/>
+  <text x="174" y="96" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="middle" letter-spacing="2">SERVICE SUPPORT</text>
+  <text x="76" y="206" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="800">Bill’s Ticket Tool</text>
+  <text x="76" y="288" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700">Turn support calls into</text>
+  <text x="76" y="337" fill="#e30613" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700">structured service tickets.</text>
+  <text x="76" y="410" fill="#bdbdbd" font-family="Arial, Helvetica, sans-serif" font-size="24">Local Whisper transcription • Evidence-backed fields • D365-ready JSON</text>
+  <g transform="translate(76 497)">
+    <circle cx="22" cy="22" r="22" fill="#e30613"/><text x="22" y="29" fill="#fff" font-family="Arial" font-size="20" font-weight="700" text-anchor="middle">1</text>
+    <rect x="54" y="20" width="72" height="4" fill="#555"/>
+    <circle cx="158" cy="22" r="22" fill="#2b2b2b" stroke="#777"/><text x="158" y="29" fill="#fff" font-family="Arial" font-size="20" font-weight="700" text-anchor="middle">2</text>
+    <rect x="190" y="20" width="72" height="4" fill="#555"/>
+    <circle cx="294" cy="22" r="22" fill="#2b2b2b" stroke="#777"/><text x="294" y="29" fill="#fff" font-family="Arial" font-size="20" font-weight="700" text-anchor="middle">3</text>
+    <text x="0" y="75" fill="#8f8f8f" font-family="Arial" font-size="16" letter-spacing="1.5">CAPTURE      TRANSCRIBE      STRUCTURE</text>
+  </g>
+</svg>

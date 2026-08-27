@@ -6,6 +6,8 @@ It can record a speakerphone call, accept an uploaded recording, or accept a wri
 
 **Live application:** [bill-support.vercel.app](https://bill-support.vercel.app/)
 
+![Bill's Ticket Tool social preview](og-image.png)
+
 ## What it does
 
 - Records audio with the browser microphone
@@ -165,9 +167,13 @@ Do not place D365 client secrets or access tokens in `app.js`; browser code is p
 bills-ticket-tool/
 ├── index.html     Page structure and controls
 ├── styles.css     Normet-inspired responsive design
-├── app.js         Recording, transcription, extraction and JSON logic
-├── README.md      Project and setup instructions
-└── LICENSE        Open-source licence
+├── app.js               Recording, transcription, extraction and JSON logic
+├── favicon.svg          Browser tab icon
+├── apple-touch-icon.png Apple/iOS home-screen icon
+├── og-image.png         Social sharing preview
+├── og-image.svg         Editable social preview source
+├── README.md            Project and setup instructions
+└── LICENSE              Apache 2.0 open-source licence
 ```
 
 ## Customising the project
@@ -229,3 +235,7 @@ Larger Whisper models may improve accuracy but take longer to download and requi
 ## Status
 
 This is a working prototype. The next major step is authenticated D365/Dataverse submission with organisation-specific field mapping and validation.
+
+## Licence
+
+Released under the [Apache License 2.0](LICENSE). Third-party models and libraries retain their own licences.
