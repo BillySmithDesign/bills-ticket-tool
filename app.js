@@ -346,10 +346,38 @@ document.getElementById('generateBtn').addEventListener('click', () => {
   renderTicket();
   document.querySelector('.output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
+
+function getTicketPayload() {
+  return {
+    schema_version: '1.0',
+    source: 'bills-ticket-tool',
+    target: 'd365_customer_service',
+    generated_at: new Date().toISOString(),
+    ...Object.fromEntries(fields.map(([key]) => [key, currentTicket[key]]))
+  };
+}
+
 document.getElementById('copyBtn').addEventListener('click', async () => {
-  const plain = Object.fromEntries(fields.map(([key]) => [key, currentTicket[key]]));
-  try { await navigator.clipboard.writeText(JSON.stringify(plain, null, 2)); showToast('JSON copied to clipboard'); }
+  try { await navigator.clipboard.writeText(JSON.stringify(getTicketPayload(), null, 2)); showToast('JSON copied to clipboard'); }
   catch { showToast('Clipboard unavailable'); }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const payload = getTicketPayload();
+  const serial = currentTicket.machine_serial?.value;
+  const suffix = serial && serial !== 'Not discussed'
+    ? serial.replace(/[^a-z0-9-]+/gi, '-').toLowerCase()
+    : new Date().toISOString().slice(0, 10);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `bills-ticket-${suffix}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast('Ticket JSON downloaded');
 });
 
 renderTicket();
