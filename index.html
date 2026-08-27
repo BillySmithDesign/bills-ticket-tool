@@ -55,6 +55,14 @@
         </div>
         <div class="consent-note">Confirm all participants consent before recording. Use a separate device from the phone making the call.</div>
         <audio id="audioPlayer" controls hidden></audio>
+        <div class="transcription-status" id="transcriptionStatus" data-state="working" hidden>
+          <div class="transcription-status-row">
+            <span class="transcription-status-dot" aria-hidden="true"></span>
+            <span id="transcriptionLabel">Preparing audio…</span>
+          </div>
+          <progress id="transcriptionProgress" max="100"></progress>
+          <small>The first transcription downloads and caches the open-source Whisper model.</small>
+        </div>
       </section>
 
       <section class="panel transcript-panel">
