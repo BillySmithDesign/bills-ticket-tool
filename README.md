@@ -27,15 +27,16 @@ npx serve .
 
 - Browser microphone recording with `MediaRecorder`
 - Upload and playback of an audio recording
+- In-browser transcription with open-source Whisper via Transformers.js
 - Paste or upload `.txt` transcripts
-- Demo transcript
+- Built-in two-speaker Australian demo call and matching transcript
 - Local evidence-first structured ticket generation
 - JSON copy action
 - Responsive layout
 
 ## Important note
 
-This package is intentionally self-contained and does not include any private API/backend from the hosted prototype. Structured extraction is implemented locally with evidence-based parsing rules. If the hosted version used an AI transcription or extraction API, those credentials/backend endpoints would need to be connected separately to reproduce that exact server-side behaviour.
+This package does not require a private transcription API or API key. Audio transcription runs locally in the browser using open-source Whisper. The model is downloaded on first use and cached by the browser. Structured extraction is implemented locally with evidence-based parsing rules.
 
 ## Brand implementation
 
