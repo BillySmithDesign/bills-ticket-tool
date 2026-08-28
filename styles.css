@@ -38,11 +38,14 @@ button, .file-btn { -webkit-tap-highlight-color: transparent; }
   z-index: 20;
 }
 .brand-wrap { display: flex; align-items: center; gap: 20px; }
-.brand-logo { display: block; width: auto; height: 38px; max-width: 148px; object-fit: contain; }
-.brand-divider { width: 1px; height: 42px; background: #d8d8d8; }
+.brand-logo { display: block; width: auto; height: 56px; max-width: 210px; object-fit: contain; }
+.brand-divider { width: 1px; height: 58px; background: #d8d8d8; }
 .eyebrow { font-size: 11px; line-height: 1; font-weight: 800; letter-spacing: .14em; color: var(--red); }
 .eyebrow.light { color: #ff5d61; }
 h1 { margin: 5px 0 0; font-size: 18px; line-height: 1; letter-spacing: -.025em; }
+.brand-title-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.builder-mini { margin-top: 5px; padding: 6px 9px 6px 6px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d9d9d9; border-radius: 999px; background: #fafafa; color: #333; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.builder-mini b { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--red); color: #fff; font-size: 10px; }
 .status-pill { display: flex; align-items: center; gap: 9px; border: 1px solid #dedede; border-radius: 999px; padding: 10px 14px; font-size: 12px; font-weight: 600; background: #fafafa; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #2da44e; box-shadow: 0 0 0 3px rgba(45,164,78,.12); }
 
@@ -53,15 +56,13 @@ h1 { margin: 5px 0 0; font-size: 18px; line-height: 1; letter-spacing: -.025em; 
 .hero h2 span { color: var(--red); }
 .hero p { max-width: 690px; color: #656565; font-size: 17px; line-height: 1.6; margin: 22px 0 0; }
 .trust-row { margin-top: 22px; display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
-.ringcentral-trust { min-height: 64px; padding: 9px 16px; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #dedede; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.05); }
+.ringcentral-trust { min-height: 76px; padding: 10px 18px; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #dedede; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.05); }
 .ringcentral-trust span { color: #727272; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.ringcentral-trust img { display: block; width: 188px; height: 42px; object-fit: contain; }
+.ringcentral-trust img { display: block; width: 240px; height: 54px; object-fit: contain; }
 .tech-badge { min-height: 64px; padding: 8px 13px; display: inline-flex; align-items: center; gap: 9px; border-radius: 10px; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
 .tech-badge:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 .tech-badge span { display: flex; flex-direction: column; font-size: 13px; font-weight: 800; line-height: 1.05; }
 .tech-badge small { margin-bottom: 4px; font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .65; }
-.builder-badge { background: #fff; color: #171717; border: 1px solid #d9d9d9; }
-.builder-badge strong { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--red); color: #fff; font-size: 14px; }
 .vercel-badge { background: #000; color: #fff; border: 1px solid #000; }
 .vercel-badge i { width: 18px; height: 16px; background: #fff; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 .github-badge { background: #fff; color: #181717; border: 1px solid #d9d9d9; }
@@ -149,8 +150,8 @@ h3 { font-size: 23px; margin: 5px 0 0; letter-spacing: -.035em; }
 @media (max-width: 560px) {
   .page-shell { padding-top: 36px; }
   .topbar { padding: 16px 18px; }
-  .brand-logo { height: 32px; max-width: 122px; }
-  .brand-divider { height: 34px; }
+  .brand-logo { height: 46px; max-width: 165px; }
+  .brand-divider { height: 48px; }
   h1 { font-size: 15px; }
   .hero h2 { font-size: 42px; }
   .hero p { font-size: 15px; }
