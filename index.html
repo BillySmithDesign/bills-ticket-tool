@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111111" />
-  <meta name="description" content="Turn underground mining equipment support calls into evidence-backed, D365-ready service ticket JSON." />
+  <meta name="description" content="Turn underground mining equipment support calls into Deepgram transcripts and locally interpreted, D365-ready service tickets." />
   <link rel="canonical" href="https://bill-support.vercel.app/" />
   <link rel="icon" href="/favicon.ico" sizes="32x32" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -12,7 +12,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://bill-support.vercel.app/" />
   <meta property="og:title" content="Bill’s Ticket Tool" />
-  <meta property="og:description" content="Turn support calls into evidence-backed, structured service tickets with local Whisper transcription." />
+  <meta property="og:description" content="Turn support calls into evidence-backed service tickets with Deepgram transcription and private local AI." />
   <meta property="og:image" content="https://bill-support.vercel.app/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -42,7 +42,7 @@
         <div class="brand-title-line"><h1>Bill’s Ticket Tool</h1><span class="builder-mini"><b>J</b> Built by Josh</span></div>
       </div>
     </div>
-    <div class="status-pill"><span class="status-dot"></span> Secure processing ready</div>
+    <button class="status-pill" id="connectionShortcut" type="button"><span class="status-dot" id="headerStatusDot"></span><span id="headerStatusText">Local AI not connected</span></button>
   </header>
 
   <main class="page-shell">
@@ -63,6 +63,20 @@
       </div>
       <div class="hero-badge" aria-hidden="true">
         <span>01</span><i></i><span>02</span><i></i><span>03</span>
+      </div>
+    </section>
+
+    <section class="connection-panel" aria-labelledby="connectionHeading">
+      <div class="connection-copy">
+        <span class="connection-dot" id="connectionDot" data-state="offline" aria-hidden="true"></span>
+        <div>
+          <div class="eyebrow" id="connectionHeading">BIGRIG AI CONNECTION</div>
+          <strong id="connectionStatus">Enter the private Tailscale API address</strong>
+        </div>
+      </div>
+      <div class="connection-controls">
+        <input id="apiBaseUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://bigrig.your-tailnet.ts.net" aria-label="BIGRIG API address">
+        <button class="btn btn-secondary" id="saveApiBtn" type="button">Save &amp; test</button>
       </div>
     </section>
 
@@ -92,7 +106,7 @@
             <span id="transcriptionLabel">Preparing audio…</span>
           </div>
           <progress id="transcriptionProgress" max="100"></progress>
-          <small>The first transcription downloads and caches the open-source Whisper model.</small>
+          <small>Deepgram transcribes the recording through the private BIGRIG service.</small>
         </div>
       </section>
 
@@ -123,7 +137,7 @@
         </div>
       </div>
       <div class="ticket-grid" id="ticketGrid"></div>
-      <div class="output-footer"><span>Nothing is inferred without transcript evidence.</span><span>JSON schema v0.1</span></div>
+      <div class="output-footer"><span id="processingNote">Connect BIGRIG to enable local AI interpretation.</span><span>JSON schema v1.1</span></div>
     </section>
 
     <section class="raw-json-section" aria-labelledby="rawJsonHeading">

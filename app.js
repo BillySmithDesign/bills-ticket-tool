@@ -14,27 +14,83 @@ const fields = [
   ['call_summary', 'Call summary']
 ];
 
-const demoTranscript = `Bill: Normet technical support, Bill speaking.
-Tom: Hi Bill, Tom Hayes from Olympic Dam underground maintenance. We have an issue with a Normet Charmec MC 605, serial MC605-2187. The machine has 4,382 hours.
+// Fictional data used only to demonstrate the workflow.
+const demoTranscript = `Bill: Technical support, Bill speaking.
+Demo caller: Hi Bill, this is the demo caller from Example Mine underground maintenance. This is a fictional test call. We have an issue with a Charmec MC 605 training unit, serial DEMO-0001. The machine has 4,382 hours.
 Bill: What is it doing?
-Tom: The boom won't extend. Operator gets fault code E214 hydraulic pressure low. The machine is parked in the workshop and isolated, so there is no immediate safety risk.
+Demo caller: The boom won't extend. The test operator gets fault code E214 hydraulic pressure low. The training unit is parked in the workshop and isolated, so there is no immediate safety risk.
 Bill: What have you checked so far?
-Tom: We checked the hydraulic oil level, inspected the obvious hoses for leaks and power-cycled the control system. Oil level is normal and we can't see any external leak. The E214 code returns as soon as boom extend is commanded.
+Demo caller: We checked the hydraulic oil level, inspected the obvious hoses for leaks and power-cycled the control system. Oil level is normal and we can't see any external leak. The E214 code returns as soon as boom extend is commanded.
 Bill: Okay. Leave the machine isolated. Next step is to check the boom extension pressure sensor connector and measure the pressure signal. If the connector is clean and secure, we'll need the pressure reading before deciding whether the sensor or hydraulic circuit is at fault.
-Tom: No worries. I'll get our auto electrician onto the connector and call back with the pressure reading.
-Bill: Great. I'll note it against Olympic Dam and the MC 605.`;
+Demo caller: No worries. I'll get the demo electrician onto the connector and call back with the pressure reading.
+Bill: Great. I'll note it against Example Mine and the training unit.`;
 
 let currentTicket = emptyTicket();
 let mediaRecorder = null;
 let chunks = [];
 let startedAt = 0;
 let timerId = null;
-let whisperPipeline = null;
 let demoIsPlaying = false;
 let ticketGeneratedAt = new Date().toISOString();
+let processingMetadata = { transcription: null, interpretation: null };
 
-const WHISPER_MODEL = 'onnx-community/whisper-tiny.en';
-const TRANSFORMERS_JS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+const API_STORAGE_KEY = 'bills_ticket_api_base';
+
+function getApiBase() {
+  return String(localStorage.getItem(API_STORAGE_KEY) || '').trim().replace(/\/$/, '');
+}
+
+function normaliseApiBase(value) {
+  const trimmed = String(value || '').trim().replace(/\/$/, '');
+  if (!trimmed) return '';
+  const url = new URL(trimmed);
+  if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
+    throw new Error('Use the HTTPS Tailscale address for BIGRIG.');
+  }
+  return url.toString().replace(/\/$/, '');
+}
+
+function setConnectionState(state, message) {
+  const dot = document.getElementById('connectionDot');
+  const status = document.getElementById('connectionStatus');
+  const headerDot = document.getElementById('headerStatusDot');
+  const headerText = document.getElementById('headerStatusText');
+  dot.dataset.state = state;
+  status.textContent = message;
+  headerDot.className = `status-dot ${state === 'ready' ? '' : state === 'error' ? 'error' : 'offline'}`.trim();
+  headerText.textContent = state === 'ready' ? 'BIGRIG AI connected' : state === 'working' ? 'Checking BIGRIG…' : 'Local AI not connected';
+}
+
+async function apiRequest(path, options = {}) {
+  const base = getApiBase();
+  if (!base) throw new Error('Enter and save the BIGRIG Tailscale address first.');
+  let response;
+  try {
+    response = await fetch(`${base}${path}`, options);
+  } catch {
+    throw new Error('Could not reach BIGRIG. Confirm Tailscale is connected and the local AI stack is running.');
+  }
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload?.error || `BIGRIG returned HTTP ${response.status}.`);
+  return payload;
+}
+
+async function checkAiConnection() {
+  if (!getApiBase()) {
+    setConnectionState('offline', 'Enter the private Tailscale API address');
+    return false;
+  }
+  setConnectionState('working', 'Checking Deepgram and local Qwen…');
+  try {
+    const health = await apiRequest('/health');
+    if (!health.ok) throw new Error('The AI service is not ready.');
+    setConnectionState('ready', `Ready · Deepgram + ${health.model}`);
+    return true;
+  } catch (error) {
+    setConnectionState('error', error.message);
+    return false;
+  }
+}
 
 function emptyTicket() {
   return Object.fromEntries(fields.map(([key]) => [key, { value: 'Not discussed', evidence: 'Not discussed' }]));
@@ -63,76 +119,6 @@ function markTicketUpdated() {
   ticketGeneratedAt = new Date().toISOString();
 }
 
-function clean(s) { return s?.replace(/^[:\s-]+|[\s.,;]+$/g, '').trim(); }
-function evidenceFor(text, rx) {
-  const lines = text.split(/\n+/).map(x => x.trim()).filter(Boolean);
-  const line = lines.find(l => rx.test(l));
-  return line || 'Not discussed';
-}
-function firstMatch(text, patterns) {
-  for (const p of patterns) {
-    const m = text.match(p);
-    if (m?.[1]) return clean(m[1]);
-  }
-  return null;
-}
-function setIf(ticket, key, value, evidence) {
-  if (value) ticket[key] = { value, evidence: evidence || value };
-}
-
-function structureTranscript(text) {
-  const t = emptyTicket();
-  const lower = text.toLowerCase();
-
-  const customer = firstMatch(text, [/from\s+([A-Z][A-Za-z0-9 &.'-]{2,50}?)(?:\.|,|\n| underground| maintenance)/i, /customer(?: is|:)?\s*([^\n.]+)/i]);
-  setIf(t, 'customer', customer, evidenceFor(text, /from|customer/i));
-
-  const site = firstMatch(text, [/from\s+([A-Z][A-Za-z0-9 &.'-]{2,50}?)(?: underground| mine| site)/i, /(?:mine site|site)(?: is|:)?\s*([^\n.]+)/i]);
-  setIf(t, 'mine_site', site, evidenceFor(text, /underground|mine site|site/i));
-
-  const caller = firstMatch(text, [/(?:^|\n)(?:caller\s*:\s*)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*:\s*(?:Hi|Hello|Hey)/m, /(?:this is|i'm|i am)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i]);
-  setIf(t, 'caller', caller, evidenceFor(text, /Hi |Hello|this is|i'm|i am/i));
-
-  const model = firstMatch(text, [/(?:Normet\s+)?((?:Charmec|Spraymec|Variomec|Multimec|Scamec|Utimec|Himec|Utilift|Agitator|Concrete Mixer)[^,.;\n]{0,28})/i, /(?:machine model|model)(?: is|:)?\s*([^,.;\n]+)/i]);
-  setIf(t, 'machine_model', model, evidenceFor(text, /Charmec|Spraymec|Variomec|Multimec|Scamec|Utimec|Himec|Utilift|machine model|model/i));
-
-  const serial = firstMatch(text, [/(?:serial(?: number| no\.?| #)?|s\/n)(?: is|:)?\s*([A-Z0-9-]{4,})/i]);
-  setIf(t, 'machine_serial', serial, evidenceFor(text, /serial|s\/n/i));
-
-  const hours = firstMatch(text, [/(?:has|on|at)?\s*([\d,]{2,7})\s*(?:hours|hrs)/i, /(?:equipment hours|machine hours)(?: is|:)?\s*([\d,]+)/i]);
-  setIf(t, 'equipment_hours', hours ? `${hours} hours` : null, evidenceFor(text, /hours|hrs/i));
-
-  const faultLine = text.split(/\n+/).find(l => /issue|fault|won't|will not|not working|problem|error|failure|stopped|can't|cannot/i.test(l) && !/what is it doing/i.test(l));
-  setIf(t, 'fault_description', faultLine ? clean(faultLine.replace(/^[^:]+:\s*/, '')) : null, faultLine);
-
-  const codes = [...text.matchAll(/(?:fault|error)?\s*code\s*([A-Z]{0,3}-?\d{2,5})/ig)].map(m => m[1].toUpperCase());
-  setIf(t, 'fault_codes', codes.length ? [...new Set(codes)].join(', ') : null, evidenceFor(text, /code/i));
-
-  const statusLine = text.split(/\n+/).find(l => /parked|isolated|running|operational|down|stopped|workshop|out of service/i.test(l));
-  setIf(t, 'machine_status', statusLine ? clean(statusLine.replace(/^[^:]+:\s*/, '')) : null, statusLine);
-
-  const safetyLine = text.split(/\n+/).find(l => /safety risk|safe|unsafe|isolated|lockout|tagged out/i.test(l));
-  if (safetyLine) {
-    const value = /no (?:immediate )?safety risk|no safety|safe/i.test(safetyLine) ? 'No immediate safety risk stated' : clean(safetyLine.replace(/^[^:]+:\s*/, ''));
-    setIf(t, 'safety_risk', value, safetyLine);
-  }
-
-  const troubleLines = text.split(/\n+/).filter(l => /checked|inspected|power-cycled|power cycled|tested|replaced|reset|measured|confirmed|oil level/i.test(l));
-  if (troubleLines.length) setIf(t, 'troubleshooting_completed', troubleLines.map(l => clean(l.replace(/^[^:]+:\s*/, ''))).join(' '), troubleLines.slice(0,2).join(' / '));
-
-  const actionLines = text.split(/\n+/).filter(l => /next step|need to|leave the machine|check the|measure|call back|recommend|should/i.test(l));
-  if (actionLines.length) setIf(t, 'recommended_actions', actionLines.map(l => clean(l.replace(/^[^:]+:\s*/, ''))).join(' '), actionLines.slice(0,2).join(' / '));
-
-  const discussed = [];
-  if (t.machine_model.value !== 'Not discussed') discussed.push(t.machine_model.value);
-  if (t.fault_description.value !== 'Not discussed') discussed.push(t.fault_description.value);
-  if (t.fault_codes.value !== 'Not discussed') discussed.push(`code ${t.fault_codes.value}`);
-  if (discussed.length) {
-    t.call_summary = { value: discussed.join(' — '), evidence: t.fault_description.evidence };
-  }
-  return t;
-}
-
 function showToast(message) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
@@ -155,69 +141,65 @@ function hideTranscriptionStatus() {
   document.getElementById('transcriptionStatus').hidden = true;
 }
 
-async function getWhisperPipeline() {
-  if (whisperPipeline) return whisperPipeline;
-
-  setTranscriptionStatus('Loading the open-source Whisper model…', 0);
-  const { pipeline, env } = await import(TRANSFORMERS_JS_URL);
-  env.useBrowserCache = true;
-
-  const useWebGpu = Boolean(navigator.gpu);
-  whisperPipeline = await pipeline('automatic-speech-recognition', WHISPER_MODEL, {
-    device: useWebGpu ? 'webgpu' : 'wasm',
-    ...(useWebGpu ? {} : { dtype: 'q8' }),
-    progress_callback: info => {
-      if (typeof info.progress === 'number') {
-        setTranscriptionStatus(`Loading Whisper: ${Math.round(info.progress)}%`, info.progress);
-      }
-    }
-  });
-  return whisperPipeline;
-}
-
-async function decodeAudioTo16kMono(blob) {
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) throw new Error('Audio decoding is not supported in this browser.');
-
-  const context = new AudioContextClass();
-  try {
-    const decoded = await context.decodeAudioData(await blob.arrayBuffer());
-    const length = Math.max(1, Math.ceil(decoded.duration * 16000));
-    const offline = new OfflineAudioContext(1, length, 16000);
-    const source = offline.createBufferSource();
-    source.buffer = decoded;
-    source.connect(offline.destination);
-    source.start();
-    const rendered = await offline.startRendering();
-    return rendered.getChannelData(0).slice();
-  } finally {
-    await context.close().catch(() => {});
-  }
-}
-
 async function transcribeAudio(blob) {
   const generateBtn = document.getElementById('generateBtn');
   generateBtn.disabled = true;
-  setTranscriptionStatus('Preparing audio…', null);
+  setTranscriptionStatus('Sending recording securely through BIGRIG to Deepgram…', null);
 
   try {
-    const [transcriber, audio] = await Promise.all([getWhisperPipeline(), decodeAudioTo16kMono(blob)]);
-    setTranscriptionStatus('Transcribing locally in your browser…', null);
-    const result = await transcriber(audio, {
-      chunk_length_s: 30,
-      stride_length_s: 5
+    const result = await apiRequest('/v1/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': blob.type || 'application/octet-stream' },
+      body: blob
     });
-    const text = String(result?.text || '').trim();
+    const text = String(result?.transcript || '').trim();
     if (!text) throw new Error('No speech was detected in this recording.');
     document.getElementById('transcript').value = text;
-    setTranscriptionStatus('Transcription ready. Review it, then generate the ticket.', 100, 'ready');
-    showToast('Recording transcribed');
+    processingMetadata.transcription = { provider: result.provider, model: result.model, request_id: result.request_id };
+    setTranscriptionStatus('Deepgram transcription ready. Review it, then generate the AI ticket.', 100, 'ready');
+    showToast('Deepgram transcription ready');
   } catch (error) {
     console.error('[transcription] failed', error);
-    setTranscriptionStatus(`Could not transcribe: ${error?.message || 'unknown browser error'}`, 0, 'error');
+    setTranscriptionStatus(`Could not transcribe: ${error?.message || 'unknown error'}`, 0, 'error');
     showToast('Transcription failed — you can still paste a transcript');
   } finally {
     generateBtn.disabled = false;
+  }
+}
+
+async function generateStructuredTicket(text, { scroll = true } = {}) {
+  if (!text) {
+    currentTicket = emptyTicket();
+    renderTicket();
+    showToast('Add a transcript first');
+    return;
+  }
+  const button = document.getElementById('generateBtn');
+  const originalLabel = button.innerHTML;
+  button.disabled = true;
+  button.textContent = 'Local AI is interpreting the call…';
+  document.getElementById('processingNote').textContent = 'Qwen is interpreting the transcript and validating evidence…';
+  try {
+    const result = await apiRequest('/v1/interpret', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript: text })
+    });
+    currentTicket = result.ticket || emptyTicket();
+    processingMetadata.interpretation = { provider: result.provider, model: result.model, chunks_processed: result.chunks_processed };
+    markTicketUpdated();
+    renderTicket();
+    document.getElementById('processingNote').textContent = `Interpreted locally by ${result.model}; every populated field passed transcript-evidence validation.`;
+    if (scroll) document.querySelector('.output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showToast('AI ticket generated');
+  } catch (error) {
+    console.error('[interpretation] failed', error);
+    document.getElementById('processingNote').textContent = `AI interpretation unavailable: ${error.message}`;
+    showToast(error.message);
+    throw error;
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalLabel;
   }
 }
 
@@ -267,10 +249,8 @@ async function playDemoCall() {
 
   speechSynthesis.cancel();
   document.getElementById('transcript').value = demoTranscript;
-  currentTicket = structureTranscript(demoTranscript);
-  markTicketUpdated();
-  renderTicket();
   document.getElementById('generateBtn').disabled = false;
+  generateStructuredTicket(demoTranscript, { scroll: false }).catch(() => {});
 
   demoIsPlaying = true;
   button.textContent = 'Stop demo recording';
@@ -287,7 +267,7 @@ async function playDemoCall() {
 
   demoIsPlaying = false;
   button.textContent = 'Replay demo recording';
-  setTranscriptionStatus('Demo complete. The transcript and ticket are ready.', 100, 'ready');
+  setTranscriptionStatus('Demo playback complete. The transcript is ready.', 100, 'ready');
 }
 
 async function toggleRecording() {
@@ -345,20 +325,18 @@ document.getElementById('audioUpload').addEventListener('change', async e => {
   showToast('Recording loaded');
   await transcribeAudio(file);
 });
-document.getElementById('generateBtn').addEventListener('click', () => {
+document.getElementById('generateBtn').addEventListener('click', async () => {
   const text = document.getElementById('transcript').value.trim();
-  currentTicket = text ? structureTranscript(text) : emptyTicket();
-  markTicketUpdated();
-  renderTicket();
-  document.querySelector('.output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  await generateStructuredTicket(text).catch(() => {});
 });
 
 function getTicketPayload() {
   return {
-    schema_version: '1.0',
+    schema_version: '1.1',
     source: 'bills-ticket-tool',
     target: 'd365_customer_service',
     generated_at: ticketGeneratedAt,
+    processing: processingMetadata,
     ...Object.fromEntries(fields.map(([key]) => [key, currentTicket[key]]))
   };
 }
@@ -395,4 +373,22 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   showToast('Ticket JSON downloaded');
 });
 
+document.getElementById('saveApiBtn').addEventListener('click', async () => {
+  try {
+    const value = normaliseApiBase(document.getElementById('apiBaseUrl').value);
+    if (!value) throw new Error('Enter the BIGRIG Tailscale address.');
+    localStorage.setItem(API_STORAGE_KEY, value);
+    await checkAiConnection();
+  } catch (error) {
+    setConnectionState('error', error.message);
+  }
+});
+
+document.getElementById('connectionShortcut').addEventListener('click', () => {
+  document.querySelector('.connection-panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('apiBaseUrl').focus();
+});
+
+document.getElementById('apiBaseUrl').value = getApiBase();
 renderTicket();
+checkAiConnection();

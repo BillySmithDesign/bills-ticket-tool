@@ -9,7 +9,7 @@
   <text x="76" y="206" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="800">Bill’s Ticket Tool</text>
   <text x="76" y="288" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700">Turn support calls into</text>
   <text x="76" y="337" fill="#e30613" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700">structured service tickets.</text>
-  <text x="76" y="410" fill="#bdbdbd" font-family="Arial, Helvetica, sans-serif" font-size="24">Local Whisper transcription • Evidence-backed fields • D365-ready JSON</text>
+  <text x="76" y="410" fill="#bdbdbd" font-family="Arial, Helvetica, sans-serif" font-size="24">Deepgram transcription • Private local AI • D365-ready JSON</text>
   <g transform="translate(76 497)">
     <circle cx="22" cy="22" r="22" fill="#e30613"/><text x="22" y="29" fill="#fff" font-family="Arial" font-size="20" font-weight="700" text-anchor="middle">1</text>
     <rect x="54" y="20" width="72" height="4" fill="#555"/>

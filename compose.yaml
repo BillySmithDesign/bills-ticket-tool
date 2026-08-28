@@ -1,0 +1,58 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: bills-ticket-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  model-loader:
+    image: ollama/ollama:latest
+    container_name: bills-ticket-model-loader
+    restart: "no"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["until ollama list >/dev/null 2>&1; do sleep 3; done; ollama pull $${OLLAMA_MODEL:-qwen2.5:7b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  ticket-api:
+    build:
+      context: ./server
+    container_name: bills-ticket-api
+    restart: unless-stopped
+    environment:
+      PORT: 8787
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY}
+      DEEPGRAM_MODEL: ${DEEPGRAM_MODEL:-nova-3}
+      DEEPGRAM_LANGUAGE: ${DEEPGRAM_LANGUAGE:-en-AU}
+      DEEPGRAM_KEYTERMS: ${DEEPGRAM_KEYTERMS:-Normet|Charmec|Spraymec|Variomec|Multimec|Scamec|Utimec|Himec|Utilift}
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-8192}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://bill-support.vercel.app,http://localhost:8080}
+      MAX_AUDIO_BYTES: ${MAX_AUDIO_BYTES:-104857600}
+    ports:
+      - "127.0.0.1:8787:8787"
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+volumes:
+  ollama_data:
+    name: bills-ticket-ollama-data
