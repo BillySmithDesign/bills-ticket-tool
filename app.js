@@ -205,9 +205,7 @@ async function transcribeAudio(blob) {
     setTranscriptionStatus('Transcribing locally in your browser…', null);
     const result = await transcriber(audio, {
       chunk_length_s: 30,
-      stride_length_s: 5,
-      language: 'english',
-      task: 'transcribe'
+      stride_length_s: 5
     });
     const text = String(result?.text || '').trim();
     if (!text) throw new Error('No speech was detected in this recording.');
