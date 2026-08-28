@@ -53,13 +53,15 @@ h1 { margin: 5px 0 0; font-size: 18px; line-height: 1; letter-spacing: -.025em; 
 .hero h2 span { color: var(--red); }
 .hero p { max-width: 690px; color: #656565; font-size: 17px; line-height: 1.6; margin: 22px 0 0; }
 .trust-row { margin-top: 22px; display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
-.ringcentral-trust { min-height: 52px; padding: 8px 13px; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #dedede; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.05); }
+.ringcentral-trust { min-height: 64px; padding: 9px 16px; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #dedede; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.05); }
 .ringcentral-trust span { color: #727272; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.ringcentral-trust img { display: block; width: 132px; height: 30px; object-fit: contain; }
-.tech-badge { min-height: 52px; padding: 8px 13px; display: inline-flex; align-items: center; gap: 9px; border-radius: 10px; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
+.ringcentral-trust img { display: block; width: 188px; height: 42px; object-fit: contain; }
+.tech-badge { min-height: 64px; padding: 8px 13px; display: inline-flex; align-items: center; gap: 9px; border-radius: 10px; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
 .tech-badge:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 .tech-badge span { display: flex; flex-direction: column; font-size: 13px; font-weight: 800; line-height: 1.05; }
 .tech-badge small { margin-bottom: 4px; font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .65; }
+.builder-badge { background: #fff; color: #171717; border: 1px solid #d9d9d9; }
+.builder-badge strong { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--red); color: #fff; font-size: 14px; }
 .vercel-badge { background: #000; color: #fff; border: 1px solid #000; }
 .vercel-badge i { width: 18px; height: 16px; background: #fff; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 .github-badge { background: #fff; color: #181717; border: 1px solid #d9d9d9; }
